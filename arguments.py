@@ -69,6 +69,16 @@ class CreateModelArgs(BaseArguments):
             type=str,
             default='/home/migueltaibo/AutoEncoders/datasets',
             help="Carpeta de datos")
+        self.parser.add_argument(
+            "--epochs",
+            type=int,
+            default=50,
+            help="# of epochs")
+        self.parser.add_argument(
+            "--batchSize",
+            type=int,
+            default=128,
+            help="batch size? ")
 
     def _correct(self):
         assert isinstance(self.args.height, int)
