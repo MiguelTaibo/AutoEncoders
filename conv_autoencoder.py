@@ -8,39 +8,62 @@ import numpy as np
 from PIL import Image
 from skimage import transform
 import glob
+import math
 import os
 
 from arguments import CreateModelArgs
 
-# Path model and weights
-#TODO introducir esto como argumentos
-name_model = "autoencoder_emocional"
-save_folder_path = './data/models/'+name_model
-model_save_path = './data/models/'+name_model+'/'+name_model+'_autoencoder_model.json'
-weight_save_path = './data/models/'+name_model+'/'+name_model+'_autoencoder_weight.h5'
+def CreateModelAutomatico(nDownSample=2,height=28, width=28):
 
+    input_img = Input(shape=(height, width, 3), name='Input')
+    x = input_img
 
-#TODO parametrizar la cantidad de capas de downsample que hai dependiendo de
-# la cantidad de imagen
+    max_side = max(height, width)
+    num_capa = 0
+    capas_no_completas = []
+    while max_side > 4:
+        num_capa+=1
+        x = Conv2D(4*(2**num_capa), (3, 3), activation='relu', padding='same', name='DownConv'+str(num_capa))(x)
+        x = MaxPooling2D((nDownSample, nDownSample), padding='same', name='DownSample'+str(num_capa))(x)
+        if math.ceil(max_side/nDownSample)>math.floor(max_side/nDownSample):
+            capas_no_completas.append(num_capa)
+        max_side = math.ceil(max_side/nDownSample)
+
+    print(capas_no_completas)
+    encoded = x
+    for i in range(num_capa,0,-1):
+        if capas_no_completas.count(num_capa-i+1)==0:
+            x = Conv2D((i+3)*2, (3, 3), activation='relu', padding='same', name='UpConv'+str(i))(x)
+        else:
+            x = Conv2D((i + 3) * 2, (3, 3), activation='relu', padding='valid', name='UpConv' + str(i))(x)
+        x = UpSampling2D((nDownSample, nDownSample), name='UpSample'+str(i))(x)
+
+    decoded = Conv2D(3, (3, 3), activation='sigmoid', padding='same', name='Output')(x)
+
+    autoencoder = Model(input_img, decoded)
+    autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
+    print('Aqui Estiamo')
+    return autoencoder
+
 def CreateModel(height=28, width=28):
-    input_img = Input(shape=(height, width, 3))  # adapt this if using `channels_first` image data format
+    input_img = Input(shape=(height, width, 3), name='Input')  # adapt this if using `channels_first` image data format
 
-    x = Conv2D(16, (3, 3), activation='relu', padding='same', name='primera')(input_img)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
-    x = MaxPooling2D((2, 2), padding='same')(x)
-    x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
-    encoded = MaxPooling2D((2, 2), padding='same')(x)
+    x = Conv2D(16, (3, 3), activation='relu', padding='same', name='DownConv1')(input_img)
+    x = MaxPooling2D((2, 2), padding='same', name='DownSample1')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='DownConv2')(x)
+    x = MaxPooling2D((2, 2), padding='same', name='DownSample2')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='DownConv3')(x)
+    encoded = MaxPooling2D((2, 2), padding='same', name='DownSample3')(x)
 
     # at this point the representation is (4, 4, 8) i.e. 128-dimensional
 
-    x = Conv2D(8, (3, 3), activation='relu', padding='same')(encoded)
-    x = UpSampling2D((2, 2))(x)
-    x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
-    x = UpSampling2D((2, 2))(x)
-    x = Conv2D(16, (3, 3), activation='relu')(x)
-    x = UpSampling2D((2, 2))(x)
-    decoded = Conv2D(3, (3, 3), activation='sigmoid', padding='same')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='UpConv3')(encoded)
+    x = UpSampling2D((2, 2), name='UpSample3')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='UpConv2')(x)
+    x = UpSampling2D((2, 2), name='UpSample2')(x)
+    x = Conv2D(16, (3, 3), activation='relu', name='UpConv1')(x)
+    x = UpSampling2D((2, 2), name='UpSample1')(x)
+    decoded = Conv2D(3, (3, 3), activation='sigmoid', padding='same', name='Output')(x)
 
     autoencoder = Model(input_img, decoded)
     autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
@@ -91,10 +114,24 @@ def checkModel(dataroot, height=28, width=28):
 
 if __name__ == "__main__":
     args = CreateModelArgs().parse()
-
-
-    autoencoder = CreateModel(height=args.height, width=args.width)
     data_train = formatearData(args.dataroot, height=args.height, width=args.width)
+
+    # Path model and weights
+    # TODO introducir esto como argumentos
+    name_model = "autoencoder_emocional_estatico"
+    save_folder_path = './data/models/' + name_model
+    model_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_model.json'
+    weight_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_weight.h5'
+
+
+    from keras.utils import plot_model
+    autoencoder = CreateModel(height=args.height, width=args.width)
+    #plot_model(autoencoder, to_file='./model.png', show_shapes=True)
+
+    #autoencoder = CreateModelAutomatico(nDownSample=args.downsample, height=args.height, width=args.width)
+    #plot_model(autoencoder, to_file='./modelDinamico.png', show_shapes=True)
+
+    #exit()
 
     autoencoder.fit(data_train, data_train,
                     epochs=args.epochs,
@@ -106,4 +143,22 @@ if __name__ == "__main__":
         save_file.write(autoencoder.to_json())
     autoencoder.save_weights(weight_save_path)
     print("Saved model")
+
+    autoencoder = CreateModelAutomatico(nDownSample=args.downsample, height=args.height, width=args.width)
+    # Path model and weights
+    # TODO introducir esto como argumentos
+    name_model = "autoencoder_emocional_dinamico"
+    save_folder_path = './data/models/' + name_model
+    model_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_model.json'
+    weight_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_weight.h5'
+    autoencoder.fit(data_train, data_train,
+                    epochs=args.epochs,
+                    batch_size=args.batchSize,
+                    shuffle=True)
+    os.makedirs(save_folder_path, exist_ok=True)
+    with open(model_save_path, 'w+') as save_file:
+        save_file.write(autoencoder.to_json())
+    autoencoder.save_weights(weight_save_path)
+    print("Saved model")
+
     #checkModel(args.dataroot, height= args.height, width=args.width)

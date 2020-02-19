@@ -65,6 +65,11 @@ class CreateModelArgs(BaseArguments):
             default=28,
             help="Anchura de la imagen que contiene la cara")
         self.parser.add_argument(
+            "--downsample",
+            type=int,
+            default=2,
+            help="Anchura de la imagen que contiene la cara")
+        self.parser.add_argument(
             "--dataroot",
             type=str,
             default='/home/migueltaibo/AutoEncoders/datasets',
