@@ -1,5 +1,5 @@
 """
-	author: Ricardo Kleinlein
+	author: Ricardo Kleinlein && Miguel Taibo
 	date: 02/2020
 
 	Script to define the Arguments class. Every script will have its own
@@ -72,8 +72,13 @@ class CreateModelArgs(BaseArguments):
         self.parser.add_argument(
             "--dataroot",
             type=str,
-            default='/home/migueltaibo/AutoEncoders/datasets',
+            default='/home/migueltaibo/AutoEncoders/datasets/AFFECTNET',
             help="Carpeta de datos")
+        self.parser.add_argument(
+            "--modelname",
+            type=str,
+            default='autoencoder_emocional',
+            help="Nombre del modelo")
         self.parser.add_argument(
             "--epochs",
             type=int,
@@ -88,3 +93,57 @@ class CreateModelArgs(BaseArguments):
     def _correct(self):
         assert isinstance(self.args.height, int)
         assert isinstance(self.args.width, int)
+        assert isinstance(self.args.downsample, int)
+        assert isinstance(self.args.dataroot, str)
+        assert isinstance(self.args.modelname, str)
+        assert isinstance(self.args.epochs, int)
+        assert isinstance(self.args.batchSize, int)
+
+
+class FilterAffectnet(BaseArguments):
+    def initialize(self):
+        BaseArguments.initialize(self)
+
+        self.parser.add_argument(
+            "--th",
+            type=float,
+            default=0.8,
+            help="Minima confianza necesaria para considerar que es una cara")
+        self.parser.add_argument(
+            "--dataroot",
+            type=str,
+            default='/home/migueltaibo/AutoEncoders/datasets/AFFECTNET',
+            help="Carpeta de datos")
+
+    def _correct(self):
+        assert isinstance(self.args.th, float)
+        assert isinstance(self.args.dataroot, str)
+
+class FaceDetEncArgs(BaseArguments):
+	def initialize(self):
+		BaseArguments.initialize(self)
+
+		self.parser.add_argument(
+			"video_dir",
+			type=str,
+			default=None,
+			help="Path to the directory of frames of a video")
+		self.parser.add_argument(
+			"--encoding_model",
+			type=str,
+			default='facenet_keras.h5',
+			help="Face encoding model [default: Keras Facenet")
+		self.parser.add_argument(
+			"--face-size",
+			type=int,
+			default=0,
+			help="Min size (in pixel area) to keep a face at detection time [default: 0]")
+		self.parser.add_argument(
+			"--save-bb",
+			action='store_true',
+			help="Saves in memory the bounding boxes")
+
+	def _correct(self):
+		assert os.path.isdir(self.args.video_dir)
+		self.args.output_dir = os.path.dirname(
+			os.path.dirname(self.args.video_dir))

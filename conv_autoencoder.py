@@ -1,3 +1,33 @@
+"""
+	Face detection and encoding
+
+	Our approach is based on visual information.
+	Run through the frames of a program, and detect as many faces as
+	possible using MTCNN [1].
+	For each detected face, encode its features as a vector
+	embedding, thanks to the Facenet model [2].
+	That way, each face, no matter from whom, available in a broadcast
+	will be accesible as a rich latent representation.
+
+	author: Miguel Taibo
+	date: 02/2020
+
+	Usage:
+		python conv_autoencoder.py <video-dir>
+
+	Options:
+		--height        Network input heigh
+		--width         Network input width
+		--downsample    Downsample rate (just for dinamic models)
+		--dataroot      Path to data
+		--modelname     Name to save the model
+		--epochs        Number of epochs trained
+		--batchSize     BatchSize to train
+        --quiet	            Hide visual information
+		-h, --help	    Display script additional help
+"""
+
+
 from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from keras.models import Model, model_from_json
 from keras.callbacks import TensorBoard
@@ -77,7 +107,10 @@ def formatearData(dataroot,height=28, width=28):
     data_train = data_train.astype('float32') / 255.
     return data_train
 
-def checkModel(dataroot, height=28, width=28):
+def checkModel(dataroot, name_model="autoencoder_emocional_estatico", height=28, width=28):
+
+    model_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_model.json'
+    weight_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_weight.h5'
     # load json and create model
     with open(model_save_path, 'r') as model_file:
         model = model_file.read()
@@ -94,44 +127,40 @@ def checkModel(dataroot, height=28, width=28):
         np_image = np.expand_dims(np_image, axis=0)
         return np_image
 
-    for img_path in sorted(glob.glob(dataroot + '/1/*')):
+    for img_path in sorted(glob.glob(dataroot + '/*/*')):
         input_image = Image.open(img_path)
         pixels = process_image(input_image, height, width)
         ypred = model.predict(pixels)
         # Show images
         f, axarr = plt.subplots(1, 2)
 
-        print(ypred.shape)
-        print(pixels.shape)
+        #print(ypred.shape)
+        #print(pixels.shape)
 
         axarr[0].imshow(ypred[0, :, :, :])
         axarr[1].imshow(pixels[0, :, :, :])
 
+        #input(img_path)
         plt.show()
-        import pdb
-        pdb.set_trace()
-
 
 if __name__ == "__main__":
     args = CreateModelArgs().parse()
     data_train = formatearData(args.dataroot, height=args.height, width=args.width)
 
     # Path model and weights
-    # TODO introducir esto como argumentos
-    name_model = "autoencoder_emocional_estatico"
+    name_model = args.namemodel
     save_folder_path = './data/models/' + name_model
-    model_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_model.json'
-    weight_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_weight.h5'
+    model_save_path = './data/models/' + name_model + '/' + name_model + '_model.json'
+    weight_save_path = './data/models/' + name_model + '/' + name_model + '_weight.h5'
 
 
-    from keras.utils import plot_model
+    #from keras.utils import plot_model
     autoencoder = CreateModel(height=args.height, width=args.width)
     #plot_model(autoencoder, to_file='./model.png', show_shapes=True)
 
     #autoencoder = CreateModelAutomatico(nDownSample=args.downsample, height=args.height, width=args.width)
     #plot_model(autoencoder, to_file='./modelDinamico.png', show_shapes=True)
 
-    #exit()
 
     autoencoder.fit(data_train, data_train,
                     epochs=args.epochs,
@@ -143,22 +172,3 @@ if __name__ == "__main__":
         save_file.write(autoencoder.to_json())
     autoencoder.save_weights(weight_save_path)
     print("Saved model")
-
-    autoencoder = CreateModelAutomatico(nDownSample=args.downsample, height=args.height, width=args.width)
-    # Path model and weights
-    # TODO introducir esto como argumentos
-    name_model = "autoencoder_emocional_dinamico"
-    save_folder_path = './data/models/' + name_model
-    model_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_model.json'
-    weight_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_weight.h5'
-    autoencoder.fit(data_train, data_train,
-                    epochs=args.epochs,
-                    batch_size=args.batchSize,
-                    shuffle=True)
-    os.makedirs(save_folder_path, exist_ok=True)
-    with open(model_save_path, 'w+') as save_file:
-        save_file.write(autoencoder.to_json())
-    autoencoder.save_weights(weight_save_path)
-    print("Saved model")
-
-    #checkModel(args.dataroot, height= args.height, width=args.width)
