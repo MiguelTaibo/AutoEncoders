@@ -55,15 +55,10 @@ class CreateModelArgs(BaseArguments):
         BaseArguments.initialize(self)
 
         self.parser.add_argument(
-            "--height",
+            "--longSize",
             type=int,
             default=28,
-            help="Altura de la imagen que contiene la cara")
-        self.parser.add_argument(
-            "--width",
-            type=int,
-            default=28,
-            help="Anchura de la imagen que contiene la cara")
+            help="Altura y anchura de la imagen que contiene la cara")
         self.parser.add_argument(
             "--downsample",
             type=int,
@@ -72,7 +67,7 @@ class CreateModelArgs(BaseArguments):
         self.parser.add_argument(
             "--dataroot",
             type=str,
-            default='/home/migueltaibo/AutoEncoders/datasets/AFFECTNET',
+            default='/mnt/pgth04b/Data_Miguel/AutoEncoders/datasets/AFFECTNET',
             help="Carpeta de datos")
         self.parser.add_argument(
             "--modelname",
@@ -91,8 +86,7 @@ class CreateModelArgs(BaseArguments):
             help="batch size? ")
 
     def _correct(self):
-        assert isinstance(self.args.height, int)
-        assert isinstance(self.args.width, int)
+        assert isinstance(self.args.longSize, int)
         assert isinstance(self.args.downsample, int)
         assert isinstance(self.args.dataroot, str)
         assert isinstance(self.args.modelname, str)
@@ -112,7 +106,7 @@ class FilterAffectnet(BaseArguments):
         self.parser.add_argument(
             "--dataroot",
             type=str,
-            default='/home/migueltaibo/AutoEncoders/datasets/AFFECTNET',
+            default='/mnt/pgth04b/Data_Miguel/AutoEncoders/datasets/AFFECTNET',
             help="Carpeta de datos")
 
     def _correct(self):

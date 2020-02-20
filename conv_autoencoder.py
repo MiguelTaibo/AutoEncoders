@@ -75,7 +75,16 @@ def CreateModelAutomatico(nDownSample=2,height=28, width=28):
     print('Aqui Estiamo')
     return autoencoder
 
-def CreateModel(height=28, width=28):
+def CreateModel(longSize):
+    if longSize==28:
+        autoencoder = Model28x28()
+    elif longSize==128:
+        autoencoder = Model128x128()
+    else:
+        autoencoder = CreateModelAutomatico()
+    return autoencoder
+
+def Model28x28(height=28, width=28):
     input_img = Input(shape=(height, width, 3), name='Input')  # adapt this if using `channels_first` image data format
 
     x = Conv2D(16, (3, 3), activation='relu', padding='same', name='DownConv1')(input_img)
@@ -98,6 +107,38 @@ def CreateModel(height=28, width=28):
     autoencoder = Model(input_img, decoded)
     autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
     return autoencoder
+
+def Model128x128(height=128, width=128):
+    input_img = Input(shape=(height, width, 3), name='Input')  # adapt this if using `channels_first` image data format
+    x = Conv2D(32, (3, 3), activation='relu', padding='same', name='DownConv1')(input_img)
+    x = MaxPooling2D((2, 2), padding='same', name='DownSample1')(x)
+    x = Conv2D(16, (3, 3), activation='relu', padding='same', name='DownConv2')(x)
+    x = MaxPooling2D((2, 2), padding='same', name='DownSample2')(x)
+    x = Conv2D(16, (3, 3), activation='relu', padding='same', name='DownConv3')(x)
+    x = MaxPooling2D((2, 2), padding='same', name='DownSample3')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='DownConv4')(x)
+    x = MaxPooling2D((2, 2), padding='same', name='DownSample4')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='DownConv5')(x)
+    encoded = MaxPooling2D((2, 2), padding='same', name='DownSample5')(x)
+
+    # at this point the representation is (4, 4, 8) i.e. 128-dimensional
+
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='UpConv5')(encoded)
+    x = UpSampling2D((2, 2), name='UpSample5')(x)
+    x = Conv2D(8, (3, 3), activation='relu', padding='same', name='UpConv4')(x)
+    x = UpSampling2D((2, 2), name='UpSample4')(x)
+    x = Conv2D(16, (3, 3), activation='relu', padding='same', name='UpConv3')(x)
+    x = UpSampling2D((2, 2), name='UpSample3')(x)
+    x = Conv2D(16, (3, 3), activation='relu', padding='same', name='UpConv2')(x)
+    x = UpSampling2D((2, 2), name='UpSample2')(x)
+    x = Conv2D(32, (3, 3), activation='relu', padding='same', name='UpConv1')(x)
+    x = UpSampling2D((2, 2), name='UpSample1')(x)
+    decoded = Conv2D(3, (3, 3), activation='sigmoid', padding='same', name='Output')(x)
+
+    autoencoder = Model(input_img, decoded)
+    autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
+    return autoencoder
+
 
 def formatearData(dataroot,height=28, width=28):
     data_train=[]
@@ -145,18 +186,21 @@ def checkModel(dataroot, name_model="autoencoder_emocional_estatico", height=28,
 
 if __name__ == "__main__":
     args = CreateModelArgs().parse()
-    data_train = formatearData(args.dataroot, height=args.height, width=args.width)
+    data_train = formatearData(args.dataroot, height=args.longSize, width=args.longSize)
 
     # Path model and weights
-    name_model = args.namemodel
+    name_model = args.modelname
     save_folder_path = './data/models/' + name_model
     model_save_path = './data/models/' + name_model + '/' + name_model + '_model.json'
     weight_save_path = './data/models/' + name_model + '/' + name_model + '_weight.h5'
 
 
-    #from keras.utils import plot_model
-    autoencoder = CreateModel(height=args.height, width=args.width)
-    #plot_model(autoencoder, to_file='./model.png', show_shapes=True)
+
+    autoencoder = CreateModel(args.longSize)
+
+    # from keras.utils import plot_model
+    # plot_model(autoencoder, to_file='./model128.png', show_shapes=True)
+    # exit()
 
     #autoencoder = CreateModelAutomatico(nDownSample=args.downsample, height=args.height, width=args.width)
     #plot_model(autoencoder, to_file='./modelDinamico.png', show_shapes=True)
