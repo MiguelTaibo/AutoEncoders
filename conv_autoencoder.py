@@ -13,7 +13,7 @@
 	date: 02/2020
 
 	Usage:
-		python conv_autoencoder.py <video-dir>
+		python conv_autoencoder.py
 
 	Options:
 		--height        Network input heigh

@@ -1,12 +1,12 @@
 """
-	author: Ricardo Kleinlein && Miguel Taibo
-	date: 02/2020
+    author: Ricardo Kleinlein && Miguel Taibo
+    date: 02/2020
 
-	Script to define the Arguments class. Every script will have its own
-	set of arguments as a rule, though some may be shared between tasks.
-	These objects are not thought to be used independently, but simply
-	as a method to automate the argument passing between scripts in the
-	retrieval pipeline.
+    Script to define the Arguments class. Every script will have its own
+    set of arguments as a rule, though some may be shared between tasks.
+    These objects are not thought to be used independently, but simply
+    as a method to automate the argument passing between scripts in the
+    retrieval pipeline.
 """
 
 import os
@@ -113,31 +113,69 @@ class FilterAffectnet(BaseArguments):
         assert isinstance(self.args.th, float)
         assert isinstance(self.args.dataroot, str)
 
+
 class FaceDetEncArgs(BaseArguments):
-	def initialize(self):
-		BaseArguments.initialize(self)
+    def initialize(self):
+        BaseArguments.initialize(self)
 
-		self.parser.add_argument(
-			"video_dir",
-			type=str,
-			default=None,
-			help="Path to the directory of frames of a video")
-		self.parser.add_argument(
-			"--encoding_model",
-			type=str,
-			default='facenet_keras.h5',
-			help="Face encoding model [default: Keras Facenet")
-		self.parser.add_argument(
-			"--face-size",
-			type=int,
-			default=0,
-			help="Min size (in pixel area) to keep a face at detection time [default: 0]")
-		self.parser.add_argument(
-			"--save-bb",
-			action='store_true',
-			help="Saves in memory the bounding boxes")
+        self.parser.add_argument(
+            "video_dir",
+            type=str,
+            default=None,
+            help="Path to the directory of frames of a video")
+        self.parser.add_argument(
+            "--encoding_model",
+            type=str,
+            default='/home/migueltaibo/AutoEncoders/data/models/autoencoder_emocional_estatico/autoencoder_emocional_estatico_autoencoder_model.json',
+            help="Face encoding model [default: Keras Facenet")
+        self.parser.add_argument(
+            "--face-size",
+            type=int,
+            default=0,
+            help="Min size (in pixel area) to keep a face at detection time [default: 0]")
+        self.parser.add_argument(
+            "--save-bb",
+            action='store_true',
+            help="Saves in memory the bounding boxes")
+        self.parser.add_argument(
+            "--encoding_weights",
+            type=str,
+            default='/home/migueltaibo/AutoEncoders/data/models/autoencoder_emocional_estatico/autoencoder_emocional_estatico_autoencoder_weight.h5',
+            help="Face encoding model [default: Keras Facenet")
 
-	def _correct(self):
-		assert os.path.isdir(self.args.video_dir)
-		self.args.output_dir = os.path.dirname(
-			os.path.dirname(self.args.video_dir))
+    def _correct(self):
+        assert os.path.isdir(self.args.video_dir)
+        self.args.output_dir = os.path.dirname(
+            os.path.dirname(self.args.video_dir))
+
+
+class SplitFramesArgs(BaseArguments):
+    def initialize(self):
+        BaseArguments.initialize(self)
+
+        self.parser.add_argument(
+            "video_path",
+            type=str,
+            default=None,
+            help="Path to a video file")
+        self.parser.add_argument(
+            "--fps",
+            type=int,
+            default=1,
+            help="Frames per second")
+        self.parser.add_argument(
+            "--frame_height",
+            type=int,
+            default=854,
+            help="Height of the frames")
+        self.parser.add_argument(
+            "--frame_width",
+            type=int,
+            default=480,
+            help="Width of the frames")
+
+    def _correct(self):
+        assert os.path.isfile(self.args.video_path)
+        assert isinstance(self.args.fps, int)
+        assert isinstance(self.args.frame_height, int)
+        assert isinstance(self.args.frame_width, int)

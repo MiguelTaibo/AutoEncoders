@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+from keras.models import model_from_json
 from os.path import join
 from tqdm import tqdm
 from mtcnn.mtcnn import MTCNN
@@ -107,9 +108,14 @@ def detect(frame, framepath, size_threshold, detection_model):
             # face_size = coord[2] * coord[3]	# area
             face_size = (2 * coord[2]) + (2 * coord[3])  # length
             if face_size >= size_threshold:
-                cropped_face = frame[coord[1]:(coord[1] + coord[3]),
-                               coord[0]:(coord[0] + coord[2])]
-                cropped_face = PIL.Image.fromarray(cropped_face).resize((160, 160))
+                x_i,x_f=(coord[1]-0.2*coord[3]),(coord[1] + (1+0.2)*coord[3])
+                y_i, y_f =(coord[0]-0.2*coord[2]),(coord[0] + (1+0.2)*coord[2])
+                x_i,x_f,y_i,y_f=int(x_i),int(x_f),int(y_i),int(y_f)
+                try:
+                    cropped_face = frame[coord[1]:coord[1]+coord[3],coord[0]:coord[0]+coord[2]]
+                except:
+                    continue
+                cropped_face = PIL.Image.fromarray(cropped_face).resize((28, 28))
                 cropped_face = np.asarray(cropped_face)
 
                 frame_info['img'].append(cropped_face)
@@ -121,10 +127,13 @@ def detect(frame, framepath, size_threshold, detection_model):
 
 
 def _encode(face, encoding_model):
-    # TODO: Check if this normalization makes sense
-    mu = np.mean(face)
-    std = np.std(face)
-    norm_face = (face - mu) / std
+    # # TODO: Check if this normalization makes sense
+    # mu = np.mean(face)
+    # std = np.std(face)
+    # norm_face = (face - mu) / std
+    #face_ = np.expand_dims(norm_face, axis=0)
+
+    norm_face = face.astype('float32')/255.
     face_ = np.expand_dims(norm_face, axis=0)
     return encoding_model.predict(face_)[0]
 
@@ -141,7 +150,7 @@ def encode(faces, encoding_model):
     """
     faces['embedding'] = []
     for face in faces['img']:
-        face_vector = _encode(face.astype('float32'),
+        face_vector = _encode(face,
                               encoding_model)
         faces['embedding'].append(face_vector)
     return faces
@@ -152,7 +161,16 @@ if __name__ == "__main__":
 
     frame_list = sorted(os.listdir(args.video_dir))
     detection_model = MTCNN()
-    encoding_model = tf.compat.v1.keras.models.load_model(args.encoding_model)
+
+
+    #encoding_model = tf.compat.v1.keras.models.load_model(args.encoding_model)
+    # load json and create model
+    json_file = open(args.encoding_model, 'r')
+    loaded_model_json = json_file.read()
+    json_file.close()
+    encoding_model = model_from_json(loaded_model_json)
+    # load weights into new model
+    encoding_model.load_weights(args.encoding_weights)
 
     summary = {'framepath': [],
                'img': [],
@@ -172,6 +190,7 @@ if __name__ == "__main__":
                        framepath,
                        args.face_size,
                        detection_model)
+
 
         # Face encoding
         faces = encode(faces, encoding_model)
