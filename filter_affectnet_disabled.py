@@ -9,9 +9,10 @@
         date: 02/2020
 
         Usage:
-            Du no yet
+            python filter_affectnet_disabled.py --dataroot <dataroot>
 
         options:
+            --th    minimun confidence to recognice a face
 
 """
 
