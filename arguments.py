@@ -94,7 +94,7 @@ class CreateModelArgs(BaseArguments):
         assert isinstance(self.args.batchSize, int)
 
 
-class FilterAffectnet(BaseArguments):
+class FilterAffectnet_disabled(BaseArguments):
     def initialize(self):
         BaseArguments.initialize(self)
 
@@ -113,6 +113,28 @@ class FilterAffectnet(BaseArguments):
         assert isinstance(self.args.th, float)
         assert isinstance(self.args.dataroot, str)
 
+class FilterAffectnet(BaseArguments):
+    def initialize(self):
+        BaseArguments.initialize(self)
+
+        self.parser.add_argument(
+            "--datapath",
+            type=str,
+            default='/mnt/pgth04b/Data_Miguel/AutoEncoders/datasets/AFFECTNET',
+            help="Carpeta de datos")
+        self.parser.add_argument(
+            "--face-size",
+            type=int,
+            default=0,
+            help="Min size (in pixel area) to keep a face at detection time [default: 0]")
+        self.parser.add_argument(
+            "--save-bb",
+            action='store_true',
+            help="Saves in memory the bounding boxes")
+
+
+    def _correct(self):
+        assert isinstance(self.args.datapath, str)
 
 class FaceDetEncArgs(BaseArguments):
     def initialize(self):

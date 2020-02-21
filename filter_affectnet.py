@@ -1,130 +1,131 @@
-"""
-        Filter AffectNet
-
-        Our approach is based on visual information.
-        Check every image on a dataset to get faces
-        using MTCNN.
-
-        author: Miguel Taibo
-        date: 02/2020
-
-        Usage:
-            Du no yet
-
-        options:
-
-"""
 
 import os
-
-import PIL
-import numpy as np
-import glob
-import cv2
 import csv
+from PIL import Image
+import pandas as pd
+import numpy as np
 
-from arguments import FilterAffectnet
+
 from mtcnn.mtcnn import MTCNN
+from os.path import join
+from arguments import FilterAffectnet
+from tqdm import tqdm
 
-def divideImages(dataroot,threshold=0.8):
+fix_coord = lambda x: 0 if x < 0 else x
 
-    face_dic_list, noface_dic_list = decideFaceNonFace(dataroot,threshold=threshold)
+def update(program_info, frame_info, output_dir='results', save_bb=False):
+    """Append the information of the current frame to the
+    program overall knowledge.
+
+    Args:
+        program_info (dict, list): Paths and features of each face
+        frame_info (dict, list): Vectors and features of each face
+        output_dir (str, optional): Output directory
+        save_bb (bool, optional): Whether or not save a copy of the bbs
+
+        Return:
+            an updated version of the program_info
+    """
+    init_item = len(program_info['img'])  # Global iterator idx
+    if len(frame_info['img']) > 0:
+        for item in range(len(frame_info['img'])):
+            program_info['size'].append(frame_info['size'][item])
+
+            program_info['confidence'].append(frame_info['confidence'][item])
+
+            img_path = join(
+                output_dir, 'boundingbox', 'img_' + str(init_item) + '.png')
+            if save_bb:
+                program_info['img'].append(img_path)
+                img = Image.fromarray(frame_info['img'][item])
+                img.save(img_path)
+            else:
+                program_info['img'].append('not_saved')
+
+            # vector_path = join(
+            #     output_dir, 'embedding', 'embedding_' + str(init_item))
+            # np.save(vector_path, frame_info['embedding'][item], allow_pickle=True)
+            # program_info['embedding'].append(vector_path + '.npy')
+            program_info['framepath'].append(frame_info['framepath'][item])
+
+            init_item += 1
+
+    return summary
 
 
+def detect(frame, framepath, size_threshold, detection_model):
+    """MTCNN Face detection for an image.
 
-    n = dataroot.rfind('/')
-    face_path = dataroot[0:n] + '/faces_'+dataroot[n+1:len(dataroot)]
-    noface_path = dataroot[0:n] + '/nofaces_' + dataroot[n + 1:len(dataroot)]
+    Args:
+        frame (float): np.ndarray with the frame pixels
+        framepath (str): Path to the frame it belongs to
+        size_threshold (int): min area of face in pixels
+        detection_model (keras.Model): Detection model
 
-    with open(dataroot + '/faces.csv', mode='w') as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=['filename', 'box', 'confidence'])
-        writer.writeheader()
-        for row in face_dic_list:
-            try:
-                filename = row['filename']
-                new_filename = face_path + filename[len(dataroot):len(filename)]
-                os.system('mv '+ filename + ' ' + new_filename)
-                writer.writerow(row)
-            except:
-                continue
-    with open(dataroot + '/nofaces.csv', mode='w') as csv_file:
-        writer = csv.DictWriter(csv_file, fieldnames=['filename', 'box', 'confidence'])
-        writer.writeheader()
-        for row in noface_dic_list:
-            try:
-                filename = row['filename']
-                new_filename = noface_path + filename[len(dataroot):len(filename)]
-                os.system('mv '+ filename + ' ' + new_filename)
-                writer.writerow(row)
-            except:
-                continue
-    return
-
-def getFacesDictionary(dataroot):
-    detector = MTCNN()
-    dic_list = []
-    for filename in sorted(glob.glob(dataroot+'/*/*')):
-        img = cv2.imread(filename)
-        faces = detector.detect_faces(img)
+    Return:
+        dict of lists of the face images detected
+        and their sizes and confidence in detection
+    """
+    faces = detection_model.detect_faces(frame)
+    frame_info = {'framepath': [],
+                  'img': [],
+                  'size': [],
+                  'confidence': []}
+    are_faces = True if len(faces) > 0 else False
+    if are_faces:
         for face in faces:
-            row = {
-                'filename': filename,
-                'box': face['box'],
-                'confidence': face['confidence']
-            }
-            dic_list.append(row)
-    return dic_list
+            coord = face['box']  # [x0, y0, width, height]
+            coord[0] = fix_coord(coord[0])
+            coord[1] = fix_coord(coord[1])
+            conf = face['confidence']
+            # face_size = coord[2] * coord[3]	# area
+            face_size = (2 * coord[2]) + (2 * coord[3])  # length
+            if face_size >= size_threshold:
 
-def decideFaceNonFace(dataroot, threshold=0.8):
-    ## Detectamos en todas las fotos caras
-    ## Si hay caras guardamos las fotos en fac_dic_list y
-    ## Si no hay guardamos las fotos en noface_dic_list
-    ## En forma de diccionario
-    detector = MTCNN()
-    face_dic_list = []
-    noface_dic_list = []
-    for filename in sorted(glob.glob(dataroot + '/*/*')):
-        img = cv2.imread(filename)
-        faces = detector.detect_faces(img)
-        th = threshold
-        face_bool = False
-        if len(faces) == 0:
-            row = {'filename': filename, 'box': -1, 'confidence': -1}
-        for face in faces:
-            if face['confidence'] > th:
-                th = face['confidence']
-                face_bool = True
-                row = {
-                    'filename': filename,
-                    'box': face['box'],
-                    'confidence': face['confidence']
-                }
-            elif not face_bool:
-                row = {'filename': filename, 'box': -1, 'confidence': -1}
+                cropped_face = frame[coord[1]:coord[1]+coord[3],coord[0]:coord[0]+coord[2]]
+                cropped_face = Image.fromarray(cropped_face).resize((28, 28))
+                cropped_face = np.asarray(cropped_face)
 
-        if face_bool:
-            face_dic_list.append(row)
-        else:
-            noface_dic_list.append(row)
+                frame_info['img'].append(cropped_face)
+                frame_info['size'].append(face_size)
+                frame_info['confidence'].append(conf)
+                frame_info['framepath'].append(framepath)
 
-    return face_dic_list, noface_dic_list
+    return frame_info
 
-def formatDirectories(dataroot):
-    ##Create new directories to save faces and non faces
-    n = dataroot.rfind('/')
-    face_path = dataroot[0:n] + '/faces_'+dataroot[n+1:len(dataroot)]
-    noface_path = dataroot[0:n] + '/nofaces_' + dataroot[n + 1:len(dataroot)]
-    os.makedirs(face_path, exist_ok=True)
-    os.makedirs(noface_path, exist_ok=True)
-    ##For every directory in dataroot we create a new one in both
-    ## face and noface directories
-    for dirname in glob.glob(dataroot+'/*'):
-        new_path = face_path + dirname[len(dataroot):len(dirname)]
-        os.makedirs(new_path, exist_ok=True)
-        new_path = noface_path + dirname[len(dataroot):len(dirname)]
-        os.makedirs(new_path, exist_ok=True)
 
-if __name__ == "__main__":
+
+
+if __name__ == '__main__':
     args = FilterAffectnet().parse()
-    formatDirectories(args.dataroot)
-    divideImages(args.dataroot, threshold=args.th)
+
+    image_list = []
+    dir_list = sorted(os.listdir(args.datapath))
+    for directory in tqdm(dir_list):
+        im_list = sorted(os.listdir(join(args.datapath,directory)))
+        for im in im_list:
+            image_list.append(join(args.datapath,directory,im))
+
+    detection_model = MTCNN()
+
+    summary = {'framepath': [],
+               'img': [],
+               'size': [],
+               'confidence': []}
+    if args.save_bb:
+        os.makedirs(join(args.output_dir, 'boundingbox'), exist_ok=True)
+
+    for img_path in tqdm(image_list, disable='quiet'):
+        image = np.asarray(Image.open(img_path).convert('RGB'))
+        faces = detect(image,
+                       img_path,
+                       args.face_size,
+                       detection_model)
+
+        summary = update(program_info=summary,
+                         frame_info=faces,
+                         output_dir=args.output_dir,
+                         save_bb=args.save_bb)
+
+    pd.DataFrame(summary).to_csv(join(
+        args.output_dir, 'detection_and_encoding.csv'), index=None)
