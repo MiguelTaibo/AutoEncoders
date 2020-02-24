@@ -1,13 +1,8 @@
 """
-	Face detection and encoding
+	Convolutional Autoencoder
 
-	Our approach is based on visual information.
-	Run through the frames of a program, and detect as many faces as
-	possible using MTCNN [1].
-	For each detected face, encode its features as a vector
-	embedding, thanks to the Facenet model [2].
-	That way, each face, no matter from whom, available in a broadcast
-	will be accesible as a rich latent representation.
+    Create a convolutional autoencoder model and train it on
+    the given dataset.
 
 	author: Miguel Taibo
 	date: 02/2020
@@ -16,14 +11,13 @@
 		python conv_autoencoder.py
 
 	Options:
-		--height        Network input heigh
-		--width         Network input width
+		--longSize
 		--downsample    Downsample rate (just for dinamic models)
 		--dataroot      Path to data
 		--modelname     Name to save the model
 		--epochs        Number of epochs trained
 		--batchSize     BatchSize to train
-        --quiet	            Hide visual information
+        --quiet	        Hide visual information
 		-h, --help	    Display script additional help
 """
 

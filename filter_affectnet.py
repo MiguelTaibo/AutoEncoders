@@ -1,3 +1,22 @@
+"""
+    Filter AffectNet
+
+    Go through every image on a dataset recognising faces
+    using MTCNN.
+    For each face take its bounding box
+
+    author: Ricardo Kleinlein && Miguel Taibo
+    date: 02/2020
+
+    Usage:
+        python filter_affectnet.py --datapath <datapath>
+
+    Options:
+        --face-size :   minimun face size to detect
+        --save-bb   :   save detected faces boundingboxes
+        --ouput-dir :   directory to save results
+"""
+
 
 import os
 import csv
@@ -94,13 +113,12 @@ def detect(frame, framepath, size_threshold, detection_model):
     return frame_info
 
 
-
-
 if __name__ == '__main__':
     args = FilterAffectnet().parse()
 
     image_list = []
     dir_list = sorted(os.listdir(args.datapath))
+
     for directory in tqdm(dir_list):
         im_list = sorted(os.listdir(join(args.datapath,directory)))
         for im in im_list:
@@ -115,7 +133,7 @@ if __name__ == '__main__':
     if args.save_bb:
         os.makedirs(join(args.output_dir, 'boundingbox'), exist_ok=True)
 
-    for img_path in tqdm(image_list, disable='quiet'):
+    for img_path in tqdm(image_list):
         image = np.asarray(Image.open(img_path).convert('RGB'))
         faces = detect(image,
                        img_path,

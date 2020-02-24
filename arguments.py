@@ -49,7 +49,6 @@ class BaseArguments():
         """Assert ranges of params, mistypes..."""
         raise NotImplementedError
 
-
 class CreateModelArgs(BaseArguments):
     def initialize(self):
         BaseArguments.initialize(self)
@@ -92,7 +91,6 @@ class CreateModelArgs(BaseArguments):
         assert isinstance(self.args.modelname, str)
         assert isinstance(self.args.epochs, int)
         assert isinstance(self.args.batchSize, int)
-
 
 class FilterAffectnet_disabled(BaseArguments):
     def initialize(self):
@@ -169,7 +167,6 @@ class FaceDetEncArgs(BaseArguments):
         assert os.path.isdir(self.args.video_dir)
         self.args.output_dir = os.path.dirname(
             os.path.dirname(self.args.video_dir))
-
 
 class SplitFramesArgs(BaseArguments):
     def initialize(self):
