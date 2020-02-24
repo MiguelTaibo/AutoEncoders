@@ -18,18 +18,19 @@
 		--epochs        Number of epochs trained
 		--batchSize     BatchSize to train
         --quiet	        Hide visual information
+        --log_dir       Directory to print TensorBoard Information
 		-h, --help	    Display script additional help
 """
 
 
-from keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
-from keras.models import Model, model_from_json
-from keras.callbacks import TensorBoard
-from keras import backend as K
-from keras.datasets import mnist
+from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
+from tensorflow.keras.models import Model, model_from_json
+from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
+from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
 import numpy as np
 
+from tqdm import tqdm
 from PIL import Image
 from skimage import transform
 import glob
@@ -135,17 +136,29 @@ def Model128x128(height=128, width=128):
     return autoencoder
 
 def formatearData(dataroot,height=28, width=28):
-    data_train=[]
-    for img_path in sorted(glob.glob(dataroot+'/*/*')):
-        data_train.append(np.array(Image.open(img_path).resize((height,width))))
+    #devuelve un 90% como datos de train
+    # y un 10% como datos de test
+    data_train = []
+    data_test = []
+    n=0
+    for img_path in tqdm(sorted(glob.glob(dataroot+'/*'))):
+        n+=1
+        if n==10:
+            n=0
+            data_test.append(np.array(Image.open(img_path).resize((height,width))))
+        else:
+            data_train.append(np.array(Image.open(img_path).resize((height,width))))
     data_train = np.array(data_train)
     data_train = data_train.astype('float32') / 255.
-    return data_train
+    data_test = np.array(data_test)
+    data_test = data_test.astype('float32') / 255.
+    return data_train, data_test
 
 if __name__ == "__main__":
     args = CreateModelArgs().parse()
-    data_train = formatearData(args.dataroot, height=args.longSize, width=args.longSize)
-
+    data_train, data_test = formatearData(args.dataroot, height=args.longSize, width=args.longSize)
+    print('Train on',len(data_train),'samples, test on', len(data_test),'samples')
+    print('------------------------------')
     # Path model and weights
     name_model = args.modelname
     save_folder_path = './data/models/' + name_model
@@ -163,14 +176,29 @@ if __name__ == "__main__":
     #autoencoder = CreateModelAutomatico(nDownSample=args.downsample, height=args.height, width=args.width)
     #plot_model(autoencoder, to_file='./modelDinamico.png', show_shapes=True)
 
+    # CALLBACKS
+    earlyStopping = EarlyStopping(monitor='val_loss',  # val_loss
+                                  patience=40, verbose=2, mode='auto',
+                                  restore_best_weights=True)  # EARLY STOPPING
+
+    # lrate_callback = keras.callbacks.LearningRateScheduler(step_decay)#DECAY LEARNING RATE #más info sobre learning rate decay methods in: https://towardsdatascience.com/learning-rate-schedules-and-adaptive-learning-rate-methods-for-deep-learning-2c8f433990d1
+    tensorboard = TensorBoard(log_dir=args.log_dir, update_freq='epoch', write_images=False,
+                              write_graph=True)  # CONTROL THE TRAINING
+
+
 
     autoencoder.fit(data_train, data_train,
                     epochs=args.epochs,
                     batch_size=args.batchSize,
-                    shuffle=True)
+                    shuffle=True,
+                    validation_split=0.1,
+                    callbacks=[tensorboard,earlyStopping])
+
 
     os.makedirs(save_folder_path, exist_ok=True)
     with open(model_save_path, 'w+') as save_file:
         save_file.write(autoencoder.to_json())
     autoencoder.save_weights(weight_save_path)
     print("Saved model")
+
+    autoencoder.evaluate(data_test, data_test, batch_size=args.batchSize)

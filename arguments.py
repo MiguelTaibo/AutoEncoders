@@ -69,6 +69,11 @@ class CreateModelArgs(BaseArguments):
             default='/mnt/pgth04b/Data_Miguel/AutoEncoders/datasets/AFFECTNET',
             help="Carpeta de datos")
         self.parser.add_argument(
+            "--log_dir",
+            type=str,
+            default='~/AutoEncoders/log_dir',
+            help="Carpeta de Tensorboard")
+        self.parser.add_argument(
             "--modelname",
             type=str,
             default='autoencoder_emocional',
