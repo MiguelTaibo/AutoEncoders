@@ -17,11 +17,14 @@
 
 	Options:
 		--encoding-model	Path to the encoding model pretrained
+		--encoding-weights	Path to the encoding model weigths
 		--face-size	        Minimal area of a face (bounding box around it)
 		--save-bb	        Save images of the bounding boxes
+		--longSize          Height and width of the boundingbox
 		--output-dir	    Directory to save results in
 		--quiet	            Hide visual information
 		-h, --help	        Display script additional help
+
 """
 
 import os
@@ -80,7 +83,7 @@ def update(program_info, frame_info, output_dir='results', save_bb=False):
 
     return summary
 
-def detect(frame, framepath, size_threshold, detection_model):
+def detect(frame, framepath, size_threshold, detection_model, longSize):
     """MTCNN Face detection for an image.
 
     Args:
@@ -108,14 +111,11 @@ def detect(frame, framepath, size_threshold, detection_model):
             # face_size = coord[2] * coord[3]	# area
             face_size = (2 * coord[2]) + (2 * coord[3])  # length
             if face_size >= size_threshold:
-                x_i,x_f=(coord[1]-0.2*coord[3]),(coord[1] + (1+0.2)*coord[3])
-                y_i, y_f =(coord[0]-0.2*coord[2]),(coord[0] + (1+0.2)*coord[2])
-                x_i,x_f,y_i,y_f=int(x_i),int(x_f),int(y_i),int(y_f)
                 try:
                     cropped_face = frame[coord[1]:coord[1]+coord[3],coord[0]:coord[0]+coord[2]]
                 except:
                     continue
-                cropped_face = PIL.Image.fromarray(cropped_face).resize((28, 28))
+                cropped_face = PIL.Image.fromarray(cropped_face).resize((longSize, longSize))
                 cropped_face = np.asarray(cropped_face)
 
                 frame_info['img'].append(cropped_face)
@@ -189,7 +189,8 @@ if __name__ == "__main__":
         faces = detect(frame,
                        framepath,
                        args.face_size,
-                       detection_model)
+                       detection_model,
+                       args.longSize)
 
 
         # Face encoding

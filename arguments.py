@@ -121,6 +121,11 @@ class FilterAffectnet(BaseArguments):
             default='/mnt/pgth04b/Data_Miguel/AutoEncoders/datasets/AFFECTNET',
             help="Carpeta de datos")
         self.parser.add_argument(
+            "--longSize",
+            type=int,
+            default=28,
+            help="Altura y anchura de la imagen que contiene la cara")
+        self.parser.add_argument(
             "--face-size",
             type=int,
             default=0,
@@ -133,6 +138,8 @@ class FilterAffectnet(BaseArguments):
 
     def _correct(self):
         assert isinstance(self.args.datapath, str)
+        assert isinstance(self.args.longSize, int)
+        assert isinstance(self.args.face-size, int)
 
 class FaceDetEncArgs(BaseArguments):
     def initialize(self):
@@ -143,6 +150,11 @@ class FaceDetEncArgs(BaseArguments):
             type=str,
             default=None,
             help="Path to the directory of frames of a video")
+        self.parser.add_argument(
+            "--longSize",
+            type=int,
+            default=28,
+            help="Altura y anchura de la imagen que contiene la cara")
         self.parser.add_argument(
             "--encoding_model",
             type=str,
@@ -198,3 +210,34 @@ class SplitFramesArgs(BaseArguments):
         assert isinstance(self.args.fps, int)
         assert isinstance(self.args.frame_height, int)
         assert isinstance(self.args.frame_width, int)
+
+class CheckModelArgs(BaseArguments):
+    def initialize(self):
+        BaseArguments.initialize(self)
+
+        self.parser.add_argument(
+            "--longSize",
+            type=int,
+            default=28,
+            help="Altura y anchura de la imagen que contiene la cara")
+        self.parser.add_argument(
+            "--dataroot",
+            type=str,
+            default='/mnt/pgth04b/Data_Miguel/AutoEncoders/datasets/AFFECTNET',
+            help="Carpeta de datos")
+        self.parser.add_argument(
+            "--modelname",
+            type=str,
+            default='autoencoder_emocional',
+            help="Nombre del modelo")
+        self.parser.add_argument(
+            "--num_it",
+            type=int,
+            default=10,
+            help="# of images to show")
+
+    def _correct(self):
+        assert isinstance(self.args.longSize, int)
+        assert isinstance(self.args.dataroot, str)
+        assert isinstance(self.args.modelname, str)
+        assert isinstance(self.args.num_it, int)

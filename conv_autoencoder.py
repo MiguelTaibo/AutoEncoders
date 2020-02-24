@@ -29,6 +29,7 @@ from keras import backend as K
 from keras.datasets import mnist
 import matplotlib.pyplot as plt
 import numpy as np
+
 from PIL import Image
 from skimage import transform
 import glob
@@ -133,7 +134,6 @@ def Model128x128(height=128, width=128):
     autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
     return autoencoder
 
-
 def formatearData(dataroot,height=28, width=28):
     data_train=[]
     for img_path in sorted(glob.glob(dataroot+'/*/*')):
@@ -141,42 +141,6 @@ def formatearData(dataroot,height=28, width=28):
     data_train = np.array(data_train)
     data_train = data_train.astype('float32') / 255.
     return data_train
-
-def checkModel(dataroot, name_model="autoencoder_emocional_estatico", height=28, width=28):
-
-    model_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_model.json'
-    weight_save_path = './data/models/' + name_model + '/' + name_model + '_autoencoder_weight.h5'
-    # load json and create model
-    with open(model_save_path, 'r') as model_file:
-        model = model_file.read()
-    model = model_from_json(model)
-
-    # load weights into new model
-    model.load_weights(weight_save_path)
-    print("Loaded model from disk")
-
-    def process_image(np_image, height=28, width=28):
-        np_image = np.array(np_image).astype('float32') / 255
-        #np_image = np.array(np_image)
-        np_image = transform.resize(np_image, (height, width, 3))
-        np_image = np.expand_dims(np_image, axis=0)
-        return np_image
-
-    for img_path in sorted(glob.glob(dataroot + '/*/*')):
-        input_image = Image.open(img_path)
-        pixels = process_image(input_image, height, width)
-        ypred = model.predict(pixels)
-        # Show images
-        f, axarr = plt.subplots(1, 2)
-
-        #print(ypred.shape)
-        #print(pixels.shape)
-
-        axarr[0].imshow(ypred[0, :, :, :])
-        axarr[1].imshow(pixels[0, :, :, :])
-
-        #input(img_path)
-        plt.show()
 
 if __name__ == "__main__":
     args = CreateModelArgs().parse()

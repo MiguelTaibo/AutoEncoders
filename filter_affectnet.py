@@ -12,9 +12,11 @@
         python filter_affectnet.py --datapath <datapath>
 
     Options:
+        --longSize  :   Height and width of the boundingbox
         --face-size :   minimun face size to detect
         --save-bb   :   save detected faces boundingboxes
         --ouput-dir :   directory to save results
+    ##TODO parametrizar el tamaño de salida de los boundingboxes
 """
 
 
@@ -102,7 +104,7 @@ def detect(frame, framepath, size_threshold, detection_model):
             if face_size >= size_threshold:
 
                 cropped_face = frame[coord[1]:coord[1]+coord[3],coord[0]:coord[0]+coord[2]]
-                cropped_face = Image.fromarray(cropped_face).resize((28, 28))
+                cropped_face = Image.fromarray(cropped_face).resize((128, 128))
                 cropped_face = np.asarray(cropped_face)
 
                 frame_info['img'].append(cropped_face)
