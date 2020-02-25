@@ -141,7 +141,7 @@ def formatearData(dataroot,height=28, width=28):
     data_train = []
     data_test = []
     n=0
-    for img_path in tqdm(sorted(glob.glob(dataroot+'/*'))):
+    for img_path in tqdm(sorted(glob.glob(dataroot+'/*/*.png'))):
         n+=1
         if n==10:
             n=0
