@@ -136,11 +136,13 @@ def Model128x128(height=128, width=128):
     return autoencoder
 
 def formatearData(dataroot,height=28, width=28):
+
     #devuelve un 90% como datos de train
     # y un 10% como datos de test
     data_train = []
     data_test = []
     n=0
+    print('Loading Dara')
     for img_path in tqdm(sorted(glob.glob(dataroot+'/*/*.png'))):
         n+=1
         if n==10:
@@ -148,10 +150,14 @@ def formatearData(dataroot,height=28, width=28):
             data_test.append(np.array(Image.open(img_path).resize((height,width))))
         else:
             data_train.append(np.array(Image.open(img_path).resize((height,width))))
+    print('------------------------------')
+    print('Normalize Train Data')
     data_train = np.array(data_train)
     data_train = data_train.astype('float32') / 255.
     data_test = np.array(data_test)
+    print('Normalize Test Data')
     data_test = data_test.astype('float32') / 255.
+    print('------------------------------')
     return data_train, data_test
 
 if __name__ == "__main__":
@@ -166,7 +172,7 @@ if __name__ == "__main__":
     weight_save_path = './data/models/' + name_model + '/' + name_model + '_weight.h5'
 
 
-
+    print('Create Model')
     autoencoder = CreateModel(args.longSize)
 
     # from keras.utils import plot_model
@@ -184,7 +190,7 @@ if __name__ == "__main__":
     # lrate_callback = keras.callbacks.LearningRateScheduler(step_decay)#DECAY LEARNING RATE #más info sobre learning rate decay methods in: https://towardsdatascience.com/learning-rate-schedules-and-adaptive-learning-rate-methods-for-deep-learning-2c8f433990d1
     tensorboard = TensorBoard(log_dir=args.log_dir, update_freq='epoch', write_images=False,
                               write_graph=True)  # CONTROL THE TRAINING
-
+    print('------------------------------')
 
 
     autoencoder.fit(data_train, data_train,
