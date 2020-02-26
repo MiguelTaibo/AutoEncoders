@@ -26,6 +26,7 @@
 from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from tensorflow.keras.models import Model, model_from_json
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
+from keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
 import numpy as np
@@ -142,9 +143,13 @@ def formatearData(dataroot,height=28, width=28):
     data_train = []
     data_test = []
     n=0
-    print('Loading Dara')
+    index=0
+    print('Loading Data')
     for img_path in tqdm(sorted(glob.glob(dataroot+'/*/*.png'))):
         n+=1
+        index+=1
+        if index==1000:
+            break
         if n==10:
             n=0
             data_test.append(np.array(Image.open(img_path).resize((height,width))))
@@ -154,17 +159,48 @@ def formatearData(dataroot,height=28, width=28):
     print('Normalize Train Data')
     data_train = np.array(data_train)
     data_train = data_train.astype('float32') / 255.
-    data_test = np.array(data_test)
     print('Normalize Test Data')
+    data_test = np.array(data_test)
     data_test = data_test.astype('float32') / 255.
     print('------------------------------')
     return data_train, data_test
 
+
+train_im = ImageDataGenerator(
+               rescale=1./255,
+               shear_range=0.0,
+               horizontal_flip=False,
+               validation_split=0.2)
+
+test_im = ImageDataGenerator(rescale=1./255)
+
+def train_val_images():
+    train_generator = train_im.flow_from_directory (
+             args.dataroot,
+             target_size=(args.longSize,args.longSize),
+             color_mode='rgb',
+             batch_size=args.batchSize,
+             shuffle = True,
+             class_mode='input',
+             subset='training')
+
+    validation_generator = None
+        # train_im.flow_from_directory (
+        #      args.dataroot,
+        #      target_size=(args.longSize,args.longSize),
+        #      color_mode='rgb',
+        #      batch_size=16,
+        #      shuffle = True,
+        #      class_mode='input',
+        #      subset='validation')
+    return train_generator, validation_generator
+
+
 if __name__ == "__main__":
     args = CreateModelArgs().parse()
-    data_train, data_test = formatearData(args.dataroot, height=args.longSize, width=args.longSize)
-    print('Train on',len(data_train),'samples, test on', len(data_test),'samples')
-    print('------------------------------')
+    #data_train, data_test = formatearData(args.dataroot, height=args.longSize, width=args.longSize)
+    #print('Train on',len(data_train),'samples, test on', len(data_test),'samples')
+    #print('------------------------------')
     # Path model and weights
     name_model = args.modelname
     save_folder_path = './data/models/' + name_model
@@ -174,7 +210,7 @@ if __name__ == "__main__":
 
     print('Create Model')
     autoencoder = CreateModel(args.longSize)
-
+    print('------------------------------')
     # from keras.utils import plot_model
     # plot_model(autoencoder, to_file='./model128.png', show_shapes=True)
     # exit()
@@ -190,15 +226,28 @@ if __name__ == "__main__":
     # lrate_callback = keras.callbacks.LearningRateScheduler(step_decay)#DECAY LEARNING RATE #más info sobre learning rate decay methods in: https://towardsdatascience.com/learning-rate-schedules-and-adaptive-learning-rate-methods-for-deep-learning-2c8f433990d1
     tensorboard = TensorBoard(log_dir=args.log_dir, update_freq='epoch', write_images=False,
                               write_graph=True)  # CONTROL THE TRAINING
-    print('------------------------------')
 
+    # Train it by providing training images
+    #train_generator, validation_generator = train_val_images()
+    train_generator, _ = train_val_images()
+    # test_generator = test_images()
+    STEP_SIZE_TRAIN = train_generator.n // train_generator.batch_size
+    #STEP_SIZE_VALIDATION = validation_generator.n // validation_generator.batch_size
+    # STEP_SIZE_TEST = test_generator.n//test_generator.batch_size
 
-    autoencoder.fit(data_train, data_train,
-                    epochs=args.epochs,
-                    batch_size=args.batchSize,
-                    shuffle=True,
-                    validation_split=0.1,
-                    callbacks=[tensorboard,earlyStopping])
+    history = autoencoder.fit_generator(generator=train_generator,
+                               steps_per_epoch=STEP_SIZE_TRAIN,
+                               epochs=args.epochs
+                               #validation_data=validation_generator,
+                               #validation_steps=STEP_SIZE_VALIDATION
+                               )
+
+    # autoencoder.fit(data_train, data_train,
+    #                 epochs=args.epochs,
+    #                 batch_size=args.batchSize,
+    #                 shuffle=True,
+    #                 validation_split=0.1,
+    #                 callbacks=[tensorboard,earlyStopping])
 
 
     os.makedirs(save_folder_path, exist_ok=True)
@@ -207,4 +256,4 @@ if __name__ == "__main__":
     autoencoder.save_weights(weight_save_path)
     print("Saved model")
 
-    autoencoder.evaluate(data_test, data_test, batch_size=args.batchSize)
+    # autoencoder.evaluate(data_test, data_test, batch_size=args.batchSize)
