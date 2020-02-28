@@ -25,7 +25,7 @@
 
 from tensorflow.keras.layers import Input, Dense, Conv2D, MaxPooling2D, UpSampling2D
 from tensorflow.keras.models import Model, model_from_json
-from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
+from tensorflow.keras.callbacks import TensorBoard, EarlyStopping, ModelCheckpoint
 from keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras import backend as K
 import matplotlib.pyplot as plt
@@ -204,6 +204,7 @@ if __name__ == "__main__":
     # Path model and weights
     name_model = args.modelname
     save_folder_path = './data/models/' + name_model
+    filepath = './data/models/' + name_model + '/' + name_model + '_model.h5'
     model_save_path = './data/models/' + name_model + '/' + name_model + '_model.json'
     weight_save_path = './data/models/' + name_model + '/' + name_model + '_weight.h5'
 
@@ -226,7 +227,7 @@ if __name__ == "__main__":
     # lrate_callback = keras.callbacks.LearningRateScheduler(step_decay)#DECAY LEARNING RATE #más info sobre learning rate decay methods in: https://towardsdatascience.com/learning-rate-schedules-and-adaptive-learning-rate-methods-for-deep-learning-2c8f433990d1
     tensorboard = TensorBoard(log_dir=args.log_dir, update_freq='epoch', write_images=False,
                               write_graph=True)  # CONTROL THE TRAINING
-
+    checkPoints = ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=10)
     # Train it by providing training images
     #train_generator, validation_generator = train_val_images()
     train_generator, _ = train_val_images()
