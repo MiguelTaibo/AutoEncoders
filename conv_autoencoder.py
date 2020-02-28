@@ -141,13 +141,14 @@ def formatearData(dataroot,height=28, width=28):
     data_train = []
     data_test = []
     n=0
-    for img_path in tqdm(sorted(glob.glob(dataroot+'/*'))):
+    for img_path in tqdm(sorted(glob.glob(dataroot+'/*/*.png'))):
         n+=1
         if n==10:
             n=0
             data_test.append(np.array(Image.open(img_path).resize((height,width))))
         else:
             data_train.append(np.array(Image.open(img_path).resize((height,width))))
+
     data_train = np.array(data_train)
     data_train = data_train.astype('float32') / 255.
     data_test = np.array(data_test)
