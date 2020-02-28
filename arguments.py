@@ -246,3 +246,22 @@ class CheckModelArgs(BaseArguments):
         assert isinstance(self.args.dataroot, str)
         assert isinstance(self.args.modelname, str)
         assert isinstance(self.args.num_it, int)
+
+class DividirImagesArgs(BaseArguments):
+    def initialize(self):
+        BaseArguments.initialize(self)
+
+        self.parser.add_argument(
+            "--size",
+            type=int,
+            default=1000,
+            help="Altura y anchura de la imagen que contiene la cara")
+        self.parser.add_argument(
+            "--dataroot",
+            type=str,
+            default='/mnt/pgth04b/Data_Miguel/AutoEncoders/datasets/AFFECTNET',
+            help="Carpeta de datos")
+
+    def _correct(self):
+        assert isinstance(self.args.size, int)
+        assert isinstance(self.args.dataroot, str)
