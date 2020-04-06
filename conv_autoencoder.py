@@ -19,6 +19,7 @@
 		--batchSize     BatchSize to train
         --quiet	        Hide visual information
         --log_dir       Directory to print TensorBoard Information
+        --save_dir
 		-h, --help	    Display script additional help
 """
 
@@ -143,13 +144,13 @@ def formatearData(dataroot,height=28, width=28):
     data_train = []
     data_test = []
     n=0
-    index=0
+    #index=0
     print('Loading Data')
     for img_path in tqdm(sorted(glob.glob(dataroot+'/*/*.png'))):
         n+=1
-        index+=1
-        if index==1000:
-            break
+        #index+=1
+        #if index==10000:
+        #    break
         if n==10:
             n=0
             data_test.append(np.array(Image.open(img_path).resize((height,width))))
@@ -203,14 +204,15 @@ if __name__ == "__main__":
     #print('------------------------------')
     # Path model and weights
     name_model = args.modelname
-    save_folder_path = './data/models/' + name_model
-    filepath = './data/models/' + name_model + '/' + name_model + '_model.h5'
-    model_save_path = './data/models/' + name_model + '/' + name_model + '_model.json'
-    weight_save_path = './data/models/' + name_model + '/' + name_model + '_weight.h5'
+    save_folder_path = args.save_dir + '/' + name_model
+    filepath = args.save_dir + '/' + name_model + '/' + name_model + '_model.h5'
+    model_save_path = args.save_dir + '/' + name_model + '/' + name_model + '_model.json'
+    weight_save_path = args.save_dir + '/' + name_model + '/' + name_model + '_weight.h5'
 
 
     print('Create Model')
     autoencoder = CreateModel(args.longSize)
+    autoencoder.summary()
     print('------------------------------')
     # from keras.utils import plot_model
     # plot_model(autoencoder, to_file='./model128.png', show_shapes=True)
@@ -224,31 +226,31 @@ if __name__ == "__main__":
                                   patience=40, verbose=2, mode='auto',
                                   restore_best_weights=True)  # EARLY STOPPING
 
-    # lrate_callback = keras.callbacks.LearningRateScheduler(step_decay)#DECAY LEARNING RATE #más info sobre learning rate decay methods in: https://towardsdatascience.com/learning-rate-schedules-and-adaptive-learning-rate-methods-for-deep-learning-2c8f433990d1
     tensorboard = TensorBoard(log_dir=args.log_dir, update_freq='epoch', write_images=False,
                               write_graph=True)  # CONTROL THE TRAINING
     checkPoints = ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=10)
     # Train it by providing training images
-    #train_generator, validation_generator = train_val_images()
+    train_generator, validation_generator = train_val_images()
     train_generator, _ = train_val_images()
-    # test_generator = test_images()
+    #test_generator = test_images()
     STEP_SIZE_TRAIN = train_generator.n // train_generator.batch_size
     #STEP_SIZE_VALIDATION = validation_generator.n // validation_generator.batch_size
     # STEP_SIZE_TEST = test_generator.n//test_generator.batch_size
 
     history = autoencoder.fit_generator(generator=train_generator,
-                               steps_per_epoch=STEP_SIZE_TRAIN,
-                               epochs=args.epochs
-                               #validation_data=validation_generator,
-                               #validation_steps=STEP_SIZE_VALIDATION
-                               )
+                                         steps_per_epoch=STEP_SIZE_TRAIN,
+                                         epochs=args.epochs,
+                                         callbacks=[tensorboard, earlyStopping,checkPoints]
+                                         #validation_data=validation_generator,
+                                         #validation_steps=STEP_SIZE_VALIDATION
+                                         )
 
-    # autoencoder.fit(data_train, data_train,
-    #                 epochs=args.epochs,
-    #                 batch_size=args.batchSize,
-    #                 shuffle=True,
-    #                 validation_split=0.1,
-    #                 callbacks=[tensorboard,earlyStopping])
+    #autoencoder.fit(data_train, data_train,
+    #                epochs=args.epochs,
+    #                batch_size=args.batchSize,
+    #                shuffle=True,
+    #                validation_split=0.1,
+    #                callbacks=[tensorboard,earlyStopping,checkPoints])
 
 
     os.makedirs(save_folder_path, exist_ok=True)

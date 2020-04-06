@@ -43,7 +43,7 @@ def checkModel(dataroot, name_model="autoencoder_emocional_estatico", height=28,
         return np_image
 
     it = 0
-    for img_path in sorted(glob.glob(dataroot + '/*')):
+    for img_path in sorted(glob.glob(dataroot + '/*/*.png')):
         input_image = Image.open(img_path)
         pixels = process_image(input_image, height, width)
         ypred = model.predict(pixels)

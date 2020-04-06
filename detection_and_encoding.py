@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
-from keras.models import model_from_json
+from tensorflow.keras.models import model_from_json, Model
 from os.path import join
 from tqdm import tqdm
 from mtcnn.mtcnn import MTCNN
@@ -172,6 +172,8 @@ if __name__ == "__main__":
     # load weights into new model
     encoding_model.load_weights(args.encoding_weights)
 
+    encoder = Model(encoding_model.get_layer("Input").input,encoding_model.get_layer("DownSample5").output)
+
     summary = {'framepath': [],
                'img': [],
                'size': [],
@@ -194,7 +196,7 @@ if __name__ == "__main__":
 
 
         # Face encoding
-        faces = encode(faces, encoding_model)
+        faces = encode(faces, encoder)
 
         summary = update(program_info=summary,
                          frame_info=faces,
