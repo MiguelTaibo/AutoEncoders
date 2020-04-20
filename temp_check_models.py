@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 from skimage import transform
 from PIL import Image
-from keras.models import model_from_json
+from tensorflow.keras.models import model_from_json
 from arguments import CheckModelArgs
 
 def checkModel(dataroot, name_model="autoencoder_emocional_estatico", height=28, width=28, num_it = 10):

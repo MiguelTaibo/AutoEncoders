@@ -297,16 +297,16 @@ def save_clusters(db, savepath, time_req):
 
             print(all_id)
             print(cov)
+            pdb.set_trace()
 
-            inv_cov = np.linalg.inv(cov)
+            #inv_cov = np.linalg.inv(cov)
             export(path=join(id_path, 'centroid'),
                    data=centroid)
             export(path=join(id_path, 'std'),
                    data=std)
             export(path=join(id_path, 'covmat'),
                    data=cov)
-            export(path=join(id_path, 'inv_covmat'),
-                   data=inv_cov)
+            #export(path=join(id_path, 'inv_covmat'), data=inv_cov)
 
             imgs = data['img'].values
             for img_path in imgs:
