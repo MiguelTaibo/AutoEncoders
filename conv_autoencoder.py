@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
     print('Create Model')
     autoencoder = CreateModel(args.longSize)
-    autoencoder.summary()
+    #autoencoder.summary()
     print('------------------------------')
     # from keras.utils import plot_model
     # plot_model(autoencoder, to_file='./model128.png', show_shapes=True)
@@ -222,13 +222,13 @@ if __name__ == "__main__":
     #plot_model(autoencoder, to_file='./modelDinamico.png', show_shapes=True)
 
     # CALLBACKS
-    earlyStopping = EarlyStopping(monitor='val_loss',  # val_loss
+    earlyStopping = EarlyStopping(monitor='loss',  # val_loss
                                   patience=40, verbose=2, mode='auto',
                                   restore_best_weights=True)  # EARLY STOPPING
 
     tensorboard = TensorBoard(log_dir=args.log_dir, update_freq='epoch', write_images=False,
                               write_graph=True)  # CONTROL THE TRAINING
-    checkPoints = ModelCheckpoint(filepath, monitor='val_loss', verbose=0, save_best_only=True, save_weights_only=False, mode='auto', period=10)
+    checkPoints = ModelCheckpoint(filepath, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', save_feq=10)
     # Train it by providing training images
     train_generator, validation_generator = train_val_images()
     train_generator, _ = train_val_images()
